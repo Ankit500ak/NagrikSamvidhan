@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Quest: Space Quiz Adventure</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Space+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Orbitron', sans-serif;
+            color: #00FF00;
+            overflow: hidden;
+            background: #000000;
+        }
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #three-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        .container {
+            position: relative;
+            text-align: center;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 2em;
+            background-color: rgba(30, 63, 90, 0.6);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            z-index: 2;
+            backdrop-filter: blur(10px);
+        }
+        .holographic-container {
+            position: relative;
+            overflow: hidden;
+        }
+        .holographic-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: linear-gradient(
+                to bottom right,
+                rgba(0, 255, 255, 0.2) 0%,
+                rgba(255, 0, 255, 0.2) 100%
+            );
+            transform: rotate(60deg);
+            pointer-events: none;
+            animation: holographic-shift 10s linear infinite;
+        }
+        @keyframes holographic-shift {
+            0% { transform: rotate(60deg) translateY(0); }
+            100% { transform: rotate(60deg) translateY(100%); }
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        input, button, select {
+            font-family: 'Space Mono', monospace;
+            font-size: 1em;
+            margin: 10px 0;
+            padding: 12px 15px;
+            background-color: rgba(12, 12, 30, 0.8);
+            color: #00FF00;
+            border: 2px solid #00FF00;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            width: calc(100% - 30px);
+        }
+        input:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+        }
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        button:hover {
+            background-color: #00FF00;
+            color: #0C0C1E;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 255, 0, 0.3);
+        }
+        .space-button {
+            position: relative;
+            overflow: hidden;
+        }
+        .space-button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(
+                circle,
+                rgba(255, 255, 255, 0.3) 0%,
+                transparent 70%
+            );
+            transform: scale(0);
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        .space-button:hover::after {
+            transform: scale(1);
+            opacity: 1;
+        }
+        #userEmoji {
+            font-size: 3em;
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            cursor: pointer;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .action-buttons button {
+            width: calc(50% - 10px);
+        }
+        .cosmic-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(12, 12, 30, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .cosmic-loader::after {
+            content: "Loading...";
+            color: #00FF00;
+            font-size: 2em;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulsating-input {
+            animation: input-pulse 2s infinite;
+        }
+        @keyframes input-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); }
+        }
+        #spaceshipContainer {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            pointer-events: none;
+            z-index: 1000;
+            transition: transform 0.1s ease-out;
+        }
+        #spaceship {
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2300FF00"><path d="M12 2L2 22h20L12 2zm0 3.5L18.5 20h-13L12 5.5z"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            transform: rotate(-90deg);
+        }
+        #tooltip {
+            position: absolute;
+            background-color: rgba(0, 255, 0, 0.8);
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #quizContainer {
+            display: none;
+        }
+        #leaderboard {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cosmic-loader"></div>
+    <div id="particles-js"></div>
+    <div id="three-container"></div>
+    <div id="spaceshipContainer"><div id="spaceship"></div></div>
+    <div id="tooltip"></div>
+    <div class="container holographic-container animate__animated animate__fadeIn">
+        <h1 class="animate__animated animate__pulse animate__infinite">Cosmic Quiz</h1>
+        <div id="userEmoji" title="Click to change emoji"></div>
+        <input type="text" id="username" class="pulsating-input" placeholder="Enter your cosmic name" required>
+        <input type="text" id="roomCode" class="pulsating-input" placeholder="Enter Galaxy Code" required>
+        <button onclick="joinRoom()" class="space-button animate__animated animate__bounceIn">Join Galaxy</button>
+        
+        <div id="quizContainer">
+            <div id="question"></div>
+            <div id="options"></div>
+            <button onclick="submitAnswer()" class="space-button">Submit Answer</button>
+        </div>
+        
+        <div id="leaderboard">
+            <h2>Cosmic Leaderboard</h2>
+            <ul id="leaderboardList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // Particle.js configuration
+        particlesJS.load('particles-js', 'particles.json', function() {
+            console.log('particles.js loaded');
+        });
+
+        // Three.js setup
+        let scene, camera, renderer, stars = [], galaxy;
+
+        function initThree() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = 1;
+            camera.rotation.x = Math.PI/2;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('three-container').appendChild(renderer.domElement);
+
+            // Create stars
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({
+                color: 0xFFFFFF,
+                size: 0.1,
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+
+            const starVertices = [];
+            for (let i = 0; i < 10000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starVertices.push(x, y, z);
+            }
+
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+
+            // Create galaxy
+            const galaxyGeometry = new THREE.SphereGeometry(5, 32, 32);
+            const galaxyMaterial = new THREE.ShaderMaterial({
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    varying vec2 vUv;
+                    void main() {
+                        vec2 p = vUv * 2.0 - 1.0;
+                        float r = length(p);
+                        float angle = atan(p.y, p.x) + time * 0.1;
+                        float intensity = 0.5 + 0.5 * sin(r * 10.0 + angle * 5.0 + time);
+                        gl_FragColor = vec4(intensity * 0.5, intensity * 0.8, intensity, 1.0);
+                    }
+                `,
+                uniforms: {
+                    time: { value: 0 }
+                },
+                transparent: true,
+                blending: THREE.AdditiveBlending
+            });
+            galaxy = new THREE.Mesh(galaxyGeometry, galaxyMaterial);
+            galaxy.position.set(0, 0, -10);
+            scene.add(galaxy);
+
+            animate();
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            
+            stars.rotation.y += 0.0002;
+            galaxy.rotation.y += 0.001;
+            galaxy.material.uniforms.time.value = time * 0.001;
+
+            renderer.render(scene, camera);
+        }
+
+        // Array of space-themed emojis
+        const spaceEmojis = [
+            '🚀', '🛸', '🌠', '🌌', '🪐', '👨‍🚀', '👩‍🚀', '🌍', '🌎', '🌏',
+            '☄️', '🌕', '🌖', '🌗', '🌘', '🌑', '🌒', '🌓', '🌔', '🌟',
+            '⭐', '✨', '🌙', '🌛', '🌜', '🌞', '🌝', '🌚', '🛰️', '🌪️',
+            '🌈', '⚡', '🔥', '🌊', '❄️', '🌋', '🌀', '🌫️', '🌬️', '💫'
+        ];
+
+        // Assign a random emoji when the page loads
+        const userEmojiElement = document.getElementById('userEmoji');
+        userEmojiElement.textContent = spaceEmojis[Math.floor(Math.random() * spaceEmojis.length)];
+
+        // Allow user to change emoji by clicking
+        userEmojiElement.addEventListener('click', () => {
+            userEmojiElement.textContent = spaceEmojis[Math.floor(Math.random() * spaceEmojis.length)];
+            gsap.from(userEmojiElement, {duration: 0.5, scale: 0, ease: "back.out(1.7)"});
+        });
+
+        let currentQuestionIndex = 0;
+        let quizData = [];
+        let userAnswers = [];
+
+        function joinRoom() {
+            const username = document.getElementById('username').value;
+            const roomCode = document.getElementById('roomCode').value;
+            const userEmoji = document.getElementById('userEmoji').textContent;
+
+            if (!username || !roomCode) {
+                Swal.fire({
+                    title: 'Cosmic Error!',
+                    text: 'Please enter your cosmic name and Galaxy Code!',
+                    icon: 'error',
+                    background: '#1E3F5A',
+                    color: '#00FF00'
+                });
+                return;
+            }
+
+            fetch(`/join/${roomCode}`, { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: username, emoji: userEmoji })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                quizData = data.questions;
+                document.getElementById('quizContainer').style.display = 'block';
+                showQuestion();
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Cosmic Error!',
+                    text: error.message || "Failed to join room",
+                    icon: 'error',
+                    background: '#1E3F5A',
+                    color: '#00FF00'
+                });
+            });
+        }
+
+        function showQuestion() {
+            if (currentQuestionIndex < quizData.length) {
+                const question = quizData[currentQuestionIndex];
+                document.getElementById('question').textContent = question.question;
+                const optionsContainer = document.getElementById('options');
+                optionsContainer.innerHTML = '';
+                question.options.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.textContent = option;
+                    button.onclick = () => selectOption(index);
+                    optionsContainer.appendChild(button);
+                });
+            } else {
+                submitQuiz();
+            }
+        }
+
+        function selectOption(index) {
+            userAnswers[currentQuestionIndex] = index;
+            const options = document.getElementById('options').children;
+            for (let i = 0; i < options.length; i++) {
+                options[i].style.backgroundColor = i === index ? '#00FF00' : '';
+                options[i].style.color = i === index ? '#0C0C1E' : '';
+            }
+        }
+
+        function submitAnswer() {
+            if (userAnswers[currentQuestionIndex] !== undefined) {
+                currentQuestionIndex++;
+                showQuestion();
+            } else {
+                Swal.fire({
+                    title: 'Cosmic Warning!',
+                    text: 'Please select an answer before proceeding!',
+                    icon: 'warning',
+                    background: '#1E3F5A',
+                    color: '#00FF00'
+                });
+            }
+        }
+
+        function submitQuiz() {
+            const username = document.getElementById('username').value;
+            const roomCode = document.getElementById('roomCode').value;
+
+            fetch('/submit_answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    roomCode: roomCode,
+                    answers: userAnswers
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('quizContainer').style.display = 'none';
+                document.getElementById('leaderboard').style.display = 'block';
+                updateLeaderboard(data.leaderboard);
+                Swal.fire({
+                    title: 'Quiz Completed!',
+                    text: `Your score: ${data.score}/${data.total}`,
+                    icon: 'success',
+                    background: '#1E3F5A',
+                    color: '#00FF00'
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function updateLeaderboard(leaderboardData) {
+            const leaderboardList = document.getElementById('leaderboardList');
+            leaderboardList.innerHTML = '';
+            leaderboardData.forEach((entry, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${entry.username}: ${entry.score}`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        function addInteractiveElements() {
+            const container = document.querySelector('.container');
+            container.addEventListener('mousemove', (e) => {
+                const { clientX, clientY } = e;
+                const { left, top, width, height } = container.getBoundingClientRect();
+                const x = (clientX - left) / width - 0.5;
+                const y = (clientY - top) / height - 0.5;
+
+                gsap.to(container, {
+                    duration: 0.5,
+                    rotationY: x * 10,
+                    rotationX: -y * 10,
+                    ease: 'power2.out'
+                });
+            });
+
+            container.addEventListener('mouseleave', () => {
+                gsap.to(container, {
+                    duration: 0.5,
+                    rotationY: 0,
+                    rotationX: 0,
+                    ease: 'power2.out'
+                });
+            });
+
+            // Add spaceship cursor
+            const spaceship = document.getElementById('spaceshipContainer');
+            document.addEventListener('mousemove', (e) => {
+                const { clientX, clientY } = e;
+                spaceship.style.transform = `translate(${clientX}px, ${clientY}px)`;
+            });
+
+            // Add tooltips to buttons and inputs
+            const elements = document.querySelectorAll('button, input, select');
+            const tooltip = document.getElementById('tooltip');
+
+            elements.forEach(element => {
+                element.addEventListener('mouseenter', (e) => {
+                    const rect = element.getBoundingClientRect();
+                    let tooltipText = '';
+
+                    switch(element.id) {
+                        case 'username':
+                            tooltipText = 'Enter your cosmic explorer name';
+                            break;
+                        case 'roomCode':
+                            tooltipText = 'Enter the Galaxy Code to join an existing game';
+                            break;
+                        default:
+                            tooltipText = element.textContent;
+                    }
+
+                    tooltip.textContent = tooltipText;
+                    tooltip.style.left = `${rect.left}px`;
+                    tooltip.style.top = `${rect.bottom + 5}px`;
+                    tooltip.style.opacity = 1;
+                });
+
+                element.addEventListener('mouseleave', () => {
+                    tooltip.style.opacity = 0;
+                });
+            });
+        }
+
+        // Add a starfield background
+        function createStarfield() {
+            const starfield = document.createElement('div');
+            starfield.style.position = 'fixed';
+            starfield.style.top = '0';
+            starfield.style.left = '0';
+            starfield.style.width = '100%';
+            starfield.style.height = '100%';
+            starfield.style.pointerEvents = 'none';
+            starfield.style.zIndex = '0';
+            document.body.appendChild(starfield);
+
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.style.position = 'absolute';
+                star.style.width = '2px';
+                star.style.height = '2px';
+                star.style.backgroundColor = 'white';
+                star.style.borderRadius = '50%';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animation = `twinkle ${Math.random() * 5 + 5}s linear infinite`;
+                starfield.appendChild(star);
+            }
+
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes twinkle {
+                    0% { opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        window.addEventListener('load', () => {
+            initThree();
+            addInteractiveElements();
+            createStarfield();
+            gsap.to('.cosmic-loader', {duration: 1, opacity: 0, delay: 1, onComplete: () => {
+                document.querySelector('.cosmic-loader').style.display = 'none';
+            }});
+            gsap.from('h1', {duration: 1.5, y: -50, opacity: 0, ease: "bounce.out", delay: 1.5});
+            gsap.from('#userEmoji', {duration: 1, scale: 0, ease: "back.out(1.7)", delay: 2});
+            gsap.from('input, button, select', {duration: 1, opacity: 0, y: 20, stagger: 0.2, delay: 2.5});
+        });
+    </script>
+</body>
+</html>
