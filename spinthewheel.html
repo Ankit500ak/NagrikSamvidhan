@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Indian Constitution Acts Wheel Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', sans-serif;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #000 url('/api/placeholder/1920/1080') no-repeat center center fixed;
+            background-size: cover;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+        .container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+        }
+        .spinbtn {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.1em;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;  
+            user-select: none;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+            }
+        }
+        .spinbtn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .spinbtn::before {
+            content: '';
+            position: absolute;
+            top: -58px;
+            width: 50px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            clip-path: polygon(50% 0%, 15% 100%, 85% 100%);
+            box-shadow: 0 -5px 10px rgba(255, 255, 255, 0.3);
+        }
+        .wheel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.1),
+                        0 0 0 20px rgba(255, 255, 255, 0.05),
+                        0 0 20px 25px rgba(255, 255, 255, 0.1);
+            transition: transform 8s cubic-bezier(0.25, 0.1, 0.25, 1);
+            transform-style: preserve-3d;
+            background: #000;
+        }
+        .wheel .segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: bottom right;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .wheel .segment-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+        }
+        .wheel .segment img {
+            width: 30px;
+            height: 30px;
+            margin-bottom: 5px;
+        }
+        .wheel .segment .act-name {
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        .wheel .segment .act-number {
+            font-size: 1em;
+            font-weight: bold;
+            color: #fff;
+        }
+        .wheel .segment::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            opacity: 0.7;
+            z-index: -1;
+        }
+        .wheel .segment::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+        .wheel .segment:hover::after {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .wheel .segment span {
+            position: relative;
+            font-size: 0.9em;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            max-width: 80%;
+            z-index: 1;
+        }
+        .wheel .segment .act-number {
+            font-size: 0.8em;
+            margin-top: 5px;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+        .wheel .segment img {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 5px;
+            filter: invert(1);
+            z-index: 1;
+        }
+        .result-card {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0) rotateY(0deg);
+            width: 450px;
+            height: 300px;
+            border-radius: 20px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            transform-style: preserve-3d;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .result-card.show {
+            transform: translate(-50%, -50%) scale(1) rotateY(360deg);
+            opacity: 1;
+        }
+        .result-card h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+            font-size: 2.2em;
+            transform: translateZ(30px);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        .result-card .content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .result-card .icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5em;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+        .result-card .details {
+            flex-grow: 1;
+            margin-left: 20px;
+            color: #fff;
+        }
+        .result-card .details h3 {
+            margin: 0 0 10px;
+            font-size: 1.4em;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+        .result-card .details p {
+            margin: 5px 0;
+            font-size: 1em;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.2) rotateZ(90deg);
+        }
+        .prize-indicator {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.2);
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 5;
+        }
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 2s infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinbtn">SPIN</div>
+        <div class="wheel">
+            <!-- Segments will be dynamically added here -->
+        </div>
+        <div class="prize-indicator"></div>
+    </div>
+    
+    <div class="result-card">
+        <button class="close-btn">&times;</button>
+        <h2>Indian Constitution Act</h2>
+        <div class="content">
+            <div class="icon">📜</div>
+            <div class="details">
+                <h3 id="result"></h3>
+                <p id="description"></p>
+                <p id="year"></p>
+                <p id="act-number"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wheel = document.querySelector('.wheel');
+        const spinBtn = document.querySelector('.spinbtn');
+        const resultCard = document.querySelector('.result-card');
+        const closeBtn = document.querySelector('.close-btn');
+        const resultSpan = document.getElementById('result');
+        const descriptionSpan = document.getElementById('description');
+        const yearSpan = document.getElementById('year');
+        const actNumberSpan = document.getElementById('act-number');
+        
+        let spinning = false;
+        let targetRotation = 0;
+
+        const acts = [
+            { name: 'Right to Education Act', year: 2009, description: 'Provides free and compulsory education to all children aged 6-14 years.', actNumber: 'Act No. 35 of 2009', color: '#FF6B6B' },
+            { name: 'Right to Information Act', year: 2005, description: 'Empowers citizens to request information from public authorities.', actNumber: 'Act No. 22 of 2005', color: '#4ECDC4' },
+            { name: 'Aadhaar Act', year: 2016, description: 'Provides legal backing to the Aadhaar unique identification number project.', actNumber: 'Act No. 18 of 2016', color: '#45B7D1' },
+            { name: 'Lokpal and Lokayuktas Act', year: 2013, description: 'Establishes anti-corruption ombudsman to investigate corruption cases.', actNumber: 'Act No. 1 of 2014', color: '#6A0DAD' },
+            { name: 'Goods and Services Tax Act', year: 2017, description: 'Implements a comprehensive indirect tax on manufacture, sale and consumption of goods and services.', actNumber: 'Act No. 12 of 2017', color: '#FF69B4' },
+            { name: 'Prevention of Corruption Act', year: 1988, description: 'Defines offences relating to corruption by public servants and related penalties.', actNumber: 'Act No. 49 of 1988', color: '#FFD700' },
+            { name: 'Protection of Human Rights Act', year: 1993, description: 'Provides for the constitution of a National Human Rights Commission.', actNumber: 'Act No. 10 of 1994', color: '#32CD32' },
+            { name: 'Citizenship Amendment Act', year: 2019, description: 'Amends the Citizenship Act of 1955 to provide a path to citizenship for religious minorities.', actNumber: 'Act No. 47 of 2019', color: '#FF4500' },
+            { name: 'National Food Security Act', year: 2013, description: 'Aims to provide subsidized food grains to approximately two-thirds of India\'s population.', actNumber: 'Act No. 20 of 2013', color: '#1E90FF' },
+            { name: 'Juvenile Justice Act', year: 2015, description: 'Provides for children in conflict with law and children in need of care and protection.', actNumber: 'Act No. 2 of 2016', color: '#8A2BE2' },
+            { name: 'Environmental Protection Act', year: 1986, description: 'Provides for the protection and improvement of the environment.', actNumber: 'Act No. 29 of 1986', color: '#00CED1' },
+            { name: 'Disaster Management Act', year: 2005, description: 'Provides for effective management of disasters and related matters.', actNumber: 'Act No. 53 of 2005', color: '#FF8C00' }
+        ];
+
+        function createWheel() {
+            const segmentAngle = 360 / acts.length;
+            acts.forEach((act, index) => {
+                const segment = document.createElement('div');
+                segment.className = 'segment';
+                segment.style.setProperty('--i', index);
+                segment.style.transform = `rotate(${segmentAngle * index}deg) skewY(${90 - segmentAngle}deg)`;
+                segment.style.setProperty('--rotation', `${segmentAngle * index}deg`);
+                segment.style.setProperty('background-color', act.color);
+
+                const content = document.createElement('div');
+                content.className = 'segment-content';
+                content.style.transform = `skewY(-${90 - segmentAngle}deg) rotate(${segmentAngle / 2}deg)`;
+
+                const icon = document.createElement('img');
+                icon.src = `/api/placeholder/40/40`;
+                icon.alt = `Icon ${index + 1}`;
+
+                const name = document.createElement('span');
+                name.className = 'act-name';
+                name.textContent = act.name;
+
+                const actNumber = document.createElement('div');
+                actNumber.className = 'act-number';
+                actNumber.textContent = act.actNumber.replace('Act No. ', '#');
+
+                content.appendChild(icon);
+                content.appendChild(name);
+                content.appendChild(actNumber);
+                segment.appendChild(content);
+                wheel.appendChild(segment);
+            });
+        }
+
+        function createStars() {
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = `${Math.random() * 3}px`;
+                star.style.height = star.style.width;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 2}s`;
+                document.body.appendChild(star);
+            }
+        }
+
+        spinBtn.onclick = function() {
+            if (spinning) return;
+            spinning = true;
+
+            resultCard.classList.remove('show');
+
+            const rotations = 5 + Math.random() * 5;
+            targetRotation += rotations * 360;
+            wheel.style.transform = `rotate(${targetRotation}deg)`;
+
+            setTimeout(() => {
+                const finalRotation = targetRotation % 360;
+                const segmentAngle = 360 / acts.length;
+                const winningIndex = Math.floor(finalRotation / segmentAngle);
+                const act = acts[acts.length - 1 - winningIndex];
+
+                resultSpan.textContent = act.name;
+                descriptionSpan.textContent = act.description;
+                yearSpan.textContent = `Year: ${act.year}`;
+                actNumberSpan.textContent = `Act Number: ${act.actNumber}`;
+                resultCard.classList.add('show');
+                spinning = false;
+            }, 8000);
+        }
+
+        closeBtn.onclick = function() {
+            resultCard.classList.remove('show');
+        }
+
+        createWheel();
+        createStars();
+    </script>
+</body>
+</html>
