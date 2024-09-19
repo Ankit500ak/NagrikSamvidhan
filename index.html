@@ -199,12 +199,17 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        #quizContainer {
+        #waitingRoom {
             display: none;
-        }
-        #leaderboard {
-            display: none;
+            text-align: center;
             margin-top: 20px;
+        }
+        #playerCount {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        #startGameBtn {
+            display: none;
         }
     </style>
 </head>
@@ -215,22 +220,24 @@
     <div id="spaceshipContainer"><div id="spaceship"></div></div>
     <div id="tooltip"></div>
     <div class="container holographic-container animate__animated animate__fadeIn">
-        <h1 class="animate__animated animate__pulse animate__infinite">Cosmic Quiz</h1>
+        <h1 class="animate__animated animate__pulse animate__infinite">Constitutional Quiz</h1>
         <div id="userEmoji" title="Click to change emoji"></div>
-        <input type="text" id="username" class="pulsating-input" placeholder="Enter your cosmic name" required>
-        <input type="text" id="roomCode" class="pulsating-input" placeholder="Enter Galaxy Code" required>
-        <button onclick="joinRoom()" class="space-button animate__animated animate__bounceIn">Join Galaxy</button>
-        
-        <div id="quizContainer">
-            <div id="question"></div>
-            <div id="options"></div>
-            <button onclick="submitAnswer()" class="space-button">Submit Answer</button>
+        <input type="text" id="username" class="pulsating-input" placeholder="Enter your player-name" required>
+        <select id="difficulty" class="pulsating-input">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+        <div class="action-buttons">
+            <button onclick="createRoom()" class="space-button animate__animated animate__bounceIn">Create Court Room</button>
+            <button onclick="joinRoom()" class="space-button animate__animated animate__bounceIn">Join Court Room</button>
+        </div>
+        <input type="text" id="roomId" class="pulsating-input" placeholder="Enter your ID to join">
+        <div id="waitingRoom">
+            <div id="playerCount">Players: 0 / 2</div>
+            <button id="startGameBtn" onclick="startGame()" class="space-button">Start Game</button>
         </div>
         
-        <div id="leaderboard">
-            <h2>Cosmic Leaderboard</h2>
-            <ul id="leaderboardList"></ul>
-        </div>
     </div>
 
     <script>
@@ -335,19 +342,56 @@
             gsap.from(userEmojiElement, {duration: 0.5, scale: 0, ease: "back.out(1.7)"});
         });
 
-        let currentQuestionIndex = 0;
-        let quizData = [];
-        let userAnswers = [];
+        let socket;
+        let roomId;
+
+        function createRoom() {
+            const username = document.getElementById('username').value;
+            const difficulty = document.getElementById('difficulty').value;
+            if (!username) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please enter your  name!',
+                    icon: 'error',
+                    background: '#1E3F5A',
+                    color: '#00FF00'
+                });
+                return;
+            }
+            fetch('/create_room', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    username: username, 
+                    emoji: userEmojiElement.textContent,
+                    difficulty: difficulty
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                gsap.to('.container', {duration: 0.5, scale: 1.05, yoyo: true, repeat: 1});
+                Swal.fire({
+                    title: 'Galaxy Created!',
+                    text: `Your Galaxy ID is: ${data.room_id}`,
+                    icon: 'success',
+                    background: '#1E3F5A',
+                    color: '#00FF00'
+                });
+                document.getElementById('roomId').value = data.room_id;
+            });
+        }
 
         function joinRoom() {
             const username = document.getElementById('username').value;
-            const roomCode = document.getElementById('roomCode').value;
+            const roomId = document.getElementById('roomId').value;
             const userEmoji = document.getElementById('userEmoji').textContent;
 
-            if (!username || !roomCode) {
+            if (!username || !roomId) {
                 Swal.fire({
-                    title: 'Cosmic Error!',
-                    text: 'Please enter your cosmic name and Galaxy Code!',
+                    title: 'Constitutional Error!',
+                    text: 'enter your name and ID!',
                     icon: 'error',
                     background: '#1E3F5A',
                     color: '#00FF00'
@@ -355,7 +399,7 @@
                 return;
             }
 
-            fetch(`/join/${roomCode}`, { 
+            fetch(`/join_room/${roomId}`, { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -369,102 +413,22 @@
                 return response.json();
             })
             .then(data => {
-                quizData = data.questions;
-                document.getElementById('quizContainer').style.display = 'block';
-                showQuestion();
+                if (data.status === "joined") {
+                    localStorage.setItem('player_id', data.player_id);
+                    localStorage.setItem('room_id', data.room_id);
+                    window.location.href = `/game?room_id=${data.room_id}&player_id=${data.player_id}`;
+                } else {
+                    throw new Error(data.error || "Unknown error occurred");
+                }
             })
             .catch(error => {
                 Swal.fire({
-                    title: 'Cosmic Error!',
+                    title: ' Error!',
                     text: error.message || "Failed to join room",
                     icon: 'error',
                     background: '#1E3F5A',
                     color: '#00FF00'
                 });
-            });
-        }
-
-        function showQuestion() {
-            if (currentQuestionIndex < quizData.length) {
-                const question = quizData[currentQuestionIndex];
-                document.getElementById('question').textContent = question.question;
-                const optionsContainer = document.getElementById('options');
-                optionsContainer.innerHTML = '';
-                question.options.forEach((option, index) => {
-                    const button = document.createElement('button');
-                    button.textContent = option;
-                    button.onclick = () => selectOption(index);
-                    optionsContainer.appendChild(button);
-                });
-            } else {
-                submitQuiz();
-            }
-        }
-
-        function selectOption(index) {
-            userAnswers[currentQuestionIndex] = index;
-            const options = document.getElementById('options').children;
-            for (let i = 0; i < options.length; i++) {
-                options[i].style.backgroundColor = i === index ? '#00FF00' : '';
-                options[i].style.color = i === index ? '#0C0C1E' : '';
-            }
-        }
-
-        function submitAnswer() {
-            if (userAnswers[currentQuestionIndex] !== undefined) {
-                currentQuestionIndex++;
-                showQuestion();
-            } else {
-                Swal.fire({
-                    title: 'Cosmic Warning!',
-                    text: 'Please select an answer before proceeding!',
-                    icon: 'warning',
-                    background: '#1E3F5A',
-                    color: '#00FF00'
-                });
-            }
-        }
-
-        function submitQuiz() {
-            const username = document.getElementById('username').value;
-            const roomCode = document.getElementById('roomCode').value;
-
-            fetch('/submit_answer', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: username,
-                    roomCode: roomCode,
-                    answers: userAnswers
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('quizContainer').style.display = 'none';
-                document.getElementById('leaderboard').style.display = 'block';
-                updateLeaderboard(data.leaderboard);
-                Swal.fire({
-                    title: 'Quiz Completed!',
-                    text: `Your score: ${data.score}/${data.total}`,
-                    icon: 'success',
-                    background: '#1E3F5A',
-                    color: '#00FF00'
-                });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-
-        function updateLeaderboard(leaderboardData) {
-            const leaderboardList = document.getElementById('leaderboardList');
-            leaderboardList.innerHTML = '';
-            leaderboardData.forEach((entry, index) => {
-                const li = document.createElement('li');
-                li.textContent = `${index + 1}. ${entry.username}: ${entry.score}`;
-                leaderboardList.appendChild(li);
             });
         }
 
@@ -513,8 +477,11 @@
                         case 'username':
                             tooltipText = 'Enter your cosmic explorer name';
                             break;
-                        case 'roomCode':
-                            tooltipText = 'Enter the Galaxy Code to join an existing game';
+                        case 'difficulty':
+                            tooltipText = 'Choose your cosmic challenge level';
+                            break;
+                        case 'roomId':
+                            tooltipText = 'Enter the Galaxy ID to join an existing game';
                             break;
                         default:
                             tooltipText = element.textContent;
